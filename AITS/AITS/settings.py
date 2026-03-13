@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'issues'
 ]
 
 MIDDLEWARE = [
@@ -117,4 +118,4 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 
-AUTH_USER_MODEL = 'AITS.User'
+AUTH_USER_MODEL = 'issues.User'
