@@ -16,6 +16,7 @@ class User(AbstractUser):
         blank=True,
         related_name='members'
     )
+    pass
 
 class Issue(models.Model):
     STATUS_CHOICES = (
