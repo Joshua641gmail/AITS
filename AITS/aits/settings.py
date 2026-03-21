@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,13 +38,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'issues',
+    'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'issues',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -120,3 +125,34 @@ STATIC_URL = 'static/'
 
 
 AUTH_USER_MODEL = 'issues.User'
+
+# 4. Django REST Framework configuration
+REST_FRAMEWORK = {
+    # All endpoints require a logged-in user by default
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    # Optional: pagination so list endpoints don't return thousands of rows
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+
+# 5. JWT token settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=60),   # access token expires in 1 hour
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),        # refresh token lasts 7 days
+    'ROTATE_REFRESH_TOKENS':  True,    # issue a new refresh token on every refresh
+    'BLACKLIST_AFTER_ROTATION': True,  # old refresh token is blacklisted after rotation
+    'AUTH_HEADER_TYPES': ('Bearer',),  # Authorization: Bearer <token>
+}
+
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',   # React dev server
+    'http://localhost:5173',   # Vite dev server
+    # 'https://yourfrontenddomain.com',  # production frontend
+]
