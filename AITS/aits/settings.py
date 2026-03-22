@@ -131,6 +131,7 @@ REST_FRAMEWORK = {
     # All endpoints require a logged-in user by default
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -156,3 +157,5 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',   # Vite dev server
     # 'https://yourfrontenddomain.com',  # production frontend
 ]
+
+LOGIN_REDIRECT_URL = '/api/'
