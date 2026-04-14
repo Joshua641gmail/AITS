@@ -37,6 +37,13 @@ class Issue(models.Model):
         blank=True,
         related_name='issues'
     )
+    image = models.ImageField(
+        upload_to='issue_images/',
+        blank=True,
+        null=True,
+        help_text='Optional: Upload an image related to the issue'
+    )
+    image = models.ImageField(upload_to='issue_images/', blank=True, null=True)
     status = models.CharField(max_length=200, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

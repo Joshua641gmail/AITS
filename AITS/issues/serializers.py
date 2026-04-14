@@ -26,16 +26,24 @@ class IssueSerializer(serializers.ModelSerializer):
     student_name = serializers.ReadOnlyField(source='student.username')
     # Using a nested serializer for depth, but keep it read-only for display
     department_details = DepartmentSerializer(source='department', read_only=True)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Issue
         fields = [
             'id', 'title', 'description', 'student', 'student_name', 
-            'department', 'department_details', 'status', 'created_at', 'updated_at'
+            'department', 'department_details','image','image_url', 'status', 'created_at', 'updated_at'
         ]
         # These fields are handled by the system, not the user input
         read_only_fields = ['status', 'student', 'created_at', 'updated_at']
 
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
 
 # 4. Assignment Serializer
 class AssignmentSerializer(serializers.ModelSerializer):
