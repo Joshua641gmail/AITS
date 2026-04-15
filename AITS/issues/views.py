@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 
 from .models import User, Issue, Assignment, Department
 from .serializers import (
@@ -96,9 +98,15 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     """
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
-    permission_classes = [permissions.IsAuthenticated, IsRegistrarOrReadOnly]
 
-
+    def get_permissions(self):
+        """
+        Allow anyone to GET departments (for registration dropdowns).
+        Only Registrars can create/update/delete.
+        """
+        if self.request.method in permissions.SAFE_METHODS:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated(), IsRegistrarOrReadOnly()]
 # ─────────────────────────────────────────────
 # User ViewSet
 # ─────────────────────────────────────────────
@@ -154,6 +162,7 @@ class IssueViewSet(viewsets.ModelViewSet):
     """
     serializer_class = IssueSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
         user = self.request.user
