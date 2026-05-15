@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from datetime import timedelta
 import os
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-%zeuve_68b_ri7j5f)r=$s82v_-(ixx9*z7v*xj^@*vz(m%&)n'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
 
 
 # Application definition
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,8 +82,37 @@ WSGI_APPLICATION = 'aits.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+def parse_database_url(url):
+    parsed = urlparse(url)
+    scheme = parsed.scheme
+
+    if scheme in ('postgres', 'postgresql'):
+        return {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote(parsed.path[1:]),
+            'USER': parsed.username or '',
+            'PASSWORD': parsed.password or '',
+            'HOST': parsed.hostname or '',
+            'PORT': parsed.port or '',
+            'OPTIONS': {'sslmode': 'require'} if not DEBUG else {},
+        }
+    if scheme == 'sqlite':
+        sqlite_path = parsed.path
+        if sqlite_path.startswith('/'):
+            sqlite_path = sqlite_path[1:]
+        if not sqlite_path:
+            sqlite_path = str(BASE_DIR / 'db.sqlite3')
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, sqlite_path),
+        }
+
+    raise ValueError(f"Unsupported database scheme: {scheme}")
+
 DATABASES = {
-    'default': {
+    'default': parse_database_url(DATABASE_URL) if DATABASE_URL else {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
@@ -122,7 +153,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 AUTH_USER_MODEL = 'issues.User'
@@ -162,5 +195,16 @@ CORS_ALLOWED_ORIGINS = [
     # 'https://yourfrontenddomain.com',  # production frontend
 ]
 
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS')
+if cors_origins_env:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+
 LOGIN_REDIRECT_URL = '/api/'
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [origin for origin in CORS_ALLOWED_ORIGINS if origin.startswith('http')]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True').lower() == 'true' and not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
