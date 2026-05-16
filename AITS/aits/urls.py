@@ -18,8 +18,25 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+
+
+def root_view(request):
+    return JsonResponse({
+        'message': 'AITS backend is running.',
+        'api_root': '/api/',
+        'health': '/health/',
+    })
+
+
+def health_view(request):
+    return JsonResponse({
+        'status': 'ok',
+    })
 
 urlpatterns = [
+    path('', root_view, name='root'),
+    path('health/', health_view, name='health'),
     path('admin/', admin.site.urls),
     path('api/', include('issues.urls')),
     path('api-auth/', include('rest_framework.urls')),
